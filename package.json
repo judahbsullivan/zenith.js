@@ -1,0 +1,24 @@
+{
+  "name": "zenith",
+  "description": "",
+  "license": "MIT",
+  "keywords": [],
+  "repository": {
+    "type": "GitHub",
+    "url": "https://github.com/judahbsullivan/zenith"
+  },
+  "maintainers": [
+    "Jonathan Streetman",
+    "Judah Sullivan"
+  ],
+  "scripts": {},
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

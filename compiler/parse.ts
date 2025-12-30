@@ -11,13 +11,21 @@ export function parseZen(path: string): ZenFile {
   let scriptIndex = 0;
   let stylesIndex = 0;
 
+  function extractTextContent(node: any): string {
+    if (!node.childNodes?.length) return '';
+    return node.childNodes
+      .filter((n: any) => n.nodeName === '#text')
+      .map((n: any) => n.value || '')
+      .join('');
+  }
+
   function walk(node: any) {
     if (node.nodeName === "script" && node.childNodes?.length) {
-      const content = node.childNodes[0].value
+      const content = extractTextContent(node);
       scripts.push({ content, index: scriptIndex++ })
     }
     if (node.nodeName === "style" && node.childNodes?.length) {
-      const content = node.childNodes[0].value
+      const content = extractTextContent(node);
       styles.push({
         content,
         index: stylesIndex++

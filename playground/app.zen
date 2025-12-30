@@ -1,60 +1,285 @@
 <html>
-  <head>
-    <script>
-    document.addEventListener("DOMContentLoaded", () => {
-        console.log("Zenith running")
+<head>
+<script>
+// Test logging helper
+function log(message) {
+  const logEl = document.getElementById("test-log");
+  if (logEl) {
+    const time = new Date().toLocaleTimeString();
+    logEl.setHTML(logEl.innerHTML + `<div>[${time}] ${message}</div>`);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+  console.log(message);
+}
 
-        const btn = document.querySelector("button")
-        if (btn) {
-        btn.addEventListener("click", () => {
-            console.log("clicked")
-            })
-        }
-        })
+// Test: addClass and removeClass
+function sayHi(event, el) {
+  el.addClass("clicked");
+  log("✓ addClass('clicked') - Button clicked!");
+  setTimeout(() => {
+    el.removeClass("clicked");
+    log("✓ removeClass('clicked') - Class removed after 1s");
+  }, 1000);
+}
+
+// Test: setText
+function updateValue(event, el) {
+  const value = el.value;
+  const displayEl = document.getElementById("value-display");
+  if (displayEl) {
+    displayEl.setText(`Current value: "${value}"`);
+    log(`✓ setText() - Input value: "${value}"`);
+  }
+}
+
+// Test: hide
+function submitForm(event, el) {
+  event.preventDefault();
+  log("✓ hide() - Form submitted, hiding form...");
+  el.hide();
+  setTimeout(() => {
+    el.show();
+    log("✓ show() - Form shown again after 2s");
+  }, 2000);
+}
+
+// Test: show/hide toggle
+function toggleVisibility(event, el) {
+  const targetEl = document.getElementById("toggle-target");
+  if (targetEl) {
+    if (targetEl.style.display === "none") {
+      targetEl.show();
+      log("✓ show() - Toggle target is now visible");
+    } else {
+      targetEl.hide();
+      log("✓ hide() - Toggle target is now hidden");
+    }
+  }
+}
+
+// Test: setHTML
+function updateHTML(event, el) {
+  const htmlEl = document.getElementById("html-display");
+  if (htmlEl) {
+    const count = parseInt(htmlEl.getAttribute("data-count") || "0") + 1;
+    htmlEl.setAttribute("data-count", count);
+    htmlEl.setHTML(`Updated <strong>${count}</strong> time${count !== 1 ? 's' : ''} with <em>setHTML()</em>`);
+    log(`✓ setHTML() - Updated HTML content (count: ${count})`);
+  }
+}
+
+// Test: addClass/removeClass toggle
+function toggleClass(event, el) {
+  const targetEl = document.getElementById("class-target");
+  if (targetEl) {
+    if (targetEl.classList.contains("highlight")) {
+      targetEl.removeClass("highlight");
+      log("✓ removeClass('highlight') - Removed highlight class");
+    } else {
+      targetEl.addClass("highlight");
+      log("✓ addClass('highlight') - Added highlight class");
+    }
+  }
+}
+
+// Initialize logging
+function initLog() {
+  log("🚀 Phase 2 Event System & DOM Helpers Test Suite");
+  log("All DOM helper methods are ready: show(), hide(), addClass(), removeClass(), setText(), setHTML()");
+}
 </script>
-  </head>
+</head>
 
-  <body>
-    <div class="container">
-      <h1 class="title">Welcome Zenith Users!</h1>
-      <button class="button">Click</button>
-    </div>
+<body onload="initLog">
+<div class="container">
+<h1 class="title">Zenith Phase 2 Tests</h1>
 
-    <style>
-      body { 
-        box-sizing: border-box;
-        width: 100%;
-        height: 100%;
-        margin: 0;
-      }
+<div class="test-section">
+  <h2>Event Handlers & DOM Helpers</h2>
+  
+  <div class="test-group">
+    <button type="button" onclick="sayHi">Test addClass/removeClass</button>
+    <span class="test-desc">Adds 'clicked' class, removes after 1s</span>
+  </div>
 
-      .container { 
-        background: purple;
-        width: 100vw;
-        height: 100vh;
-        display: flex; 
-        flex-direction: column; 
-        justify-content: center;
-        align-items: center;
-        gap: 12px;
-      }
+  <div class="test-group">
+    <input type="text" oninput="updateValue" placeholder="Type to test setText()" />
+    <div id="value-display" class="display-box">Current value: (none)</div>
+  </div>
 
-      .title { 
-        font-size: 120px;
-        font-weight: 900;
-        letter-spacing: 12px; 
-        line-height: 0.933; 
-        color: white;
-      }
+  <div class="test-group">
+    <form onsubmit="submitForm">
+      <button type="submit">Test hide/show (form)</button>
+    </form>
+    <span class="test-desc">Hides form, shows after 2s</span>
+  </div>
 
-      .button { 
-        background: black;
-        color: white;
-        padding: 12px 20px;
-        border-radius: 8px; 
-        border: none;
-        cursor: pointer;
-      }
-    </style>
-  </body>
+  <div class="test-group">
+    <button type="button" onclick="toggleVisibility">Toggle Visibility</button>
+    <div id="toggle-target" class="display-box">This element can be shown/hidden</div>
+  </div>
+
+  <div class="test-group">
+    <button type="button" onclick="updateHTML">Test setHTML()</button>
+    <div id="html-display" class="display-box" data-count="0">Click to update HTML content</div>
+  </div>
+
+  <div class="test-group">
+    <button type="button" onclick="toggleClass">Toggle Class</button>
+    <div id="class-target" class="display-box">This element's class can be toggled</div>
+  </div>
+</div>
+
+<div class="log-section">
+  <h2>Test Log</h2>
+  <div id="test-log" class="log-box"></div>
+</div>
+</div>
+
+<style>
+body { 
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.container { 
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.title { 
+  font-size: 48px;
+  font-weight: 900;
+  letter-spacing: 4px; 
+  color: white;
+  text-align: center;
+  margin-bottom: 30px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.test-section {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.test-section h2 {
+  margin-top: 0;
+  color: #333;
+  border-bottom: 2px solid #667eea;
+  padding-bottom: 10px;
+}
+
+.test-group {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+}
+
+.test-desc {
+  display: block;
+  font-size: 12px;
+  color: #666;
+  margin-top: 8px;
+  font-style: italic;
+}
+
+button {
+  background: #667eea;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background: #5568d3;
+}
+
+button.clicked {
+  background: #48bb78;
+  transform: scale(1.05);
+}
+
+input {
+  padding: 10px;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 100%;
+  max-width: 400px;
+}
+
+input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.display-box {
+  margin-top: 10px;
+  padding: 12px;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  min-height: 40px;
+  color: #333;
+}
+
+.display-box.highlight {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  font-weight: 600;
+}
+
+.log-section {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.log-section h2 {
+  margin-top: 0;
+  color: #333;
+  border-bottom: 2px solid #667eea;
+  padding-bottom: 10px;
+}
+
+.log-box {
+  background: #1a202c;
+  color: #a0aec0;
+  padding: 15px;
+  border-radius: 6px;
+  max-height: 300px;
+  overflow-y: auto;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.log-box div {
+  margin-bottom: 4px;
+  padding: 2px 0;
+}
+
+.log-box div:last-child {
+  color: #48bb78;
+  font-weight: 600;
+}
+</style>
+</body>
 </html>

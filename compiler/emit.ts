@@ -5,7 +5,8 @@ export function emit(
   outDir: string,
   html: string,
   scripts: string[],
-  styles: string[]
+  styles: string[],
+  entryPath?: string
 ) {
   fs.mkdirSync(outDir, { recursive: true })
 
@@ -17,7 +18,26 @@ export function emit(
     .map((_, i) => `<script src="./script-${i}.js" defer></script>`)
     .join("\n")
 
+  // Copy favicon.ico if it exists in the entry directory
+  if (entryPath) {
+    const entryDir = path.dirname(entryPath)
+    const faviconPath = path.join(entryDir, "favicon.ico")
+    if (fs.existsSync(faviconPath)) {
+      fs.copyFileSync(faviconPath, path.join(outDir, "favicon.ico"))
+    }
+  }
+
   let outputHTML = html
+
+  // Add favicon link if favicon exists
+  const faviconLink = '<link rel="icon" type="image/x-icon" href="./favicon.ico">'
+  if (outputHTML.includes("</head>")) {
+    outputHTML = outputHTML.replace("</head>", `${faviconLink}\n</head>`)
+  } else if (outputHTML.includes("<head>")) {
+    outputHTML = outputHTML.replace("<head>", `<head>\n${faviconLink}`)
+  } else {
+    outputHTML = `${faviconLink}\n${outputHTML}`
+  }
 
   if (styleLinks) {
     outputHTML = outputHTML.includes("</head>")

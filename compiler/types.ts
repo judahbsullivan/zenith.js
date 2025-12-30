@@ -13,3 +13,4 @@ export interface StyleBlock {
   content: string;
   index: number;
 }
+

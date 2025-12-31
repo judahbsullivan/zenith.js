@@ -42,12 +42,13 @@ jobs:
           if [ "${{ github.event_name }}" = "push" ]; then
             EVENT_TYPE="push"
             BRANCH="${{ github.ref_name }}"
-            COMMITS_COUNT="${{ github.event.commits | length }}"
             PUSHER="${{ github.event.pusher.name }}"
             COMPARE_URL="${{ github.event.compare }}"
             
-            # Get commit messages
-            COMMITS=$(echo '${{ toJSON(github.event.commits) }}' | jq -r '.[] | "- " + (.message | split("\n")[0])' | head -10)
+            # Get commit messages and count
+            COMMITS_JSON='${{ toJSON(github.event.commits) }}'
+            COMMITS=$(echo "$COMMITS_JSON" | jq -r '.[] | "- " + (.message | split("\n")[0])' | head -10)
+            COMMITS_COUNT=$(echo "$COMMITS_JSON" | jq 'length')
             
             COLOR="3447003"  # Blue
             EMOJI="📦"

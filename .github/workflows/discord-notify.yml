@@ -81,7 +81,7 @@ jobs:
               ;;
           esac
           
-          # Determine color based on action (ACTION already set above)
+          # Determine color, emoji, and title based on action (ACTION already set above)
           case "$ACTION" in
             opened)
               COLOR="3066993"  # Green
@@ -120,14 +120,21 @@ jobs:
               ;;
           esac
           
+          # Export variables for Node.js script
+          export EMOJI TITLE COLOR
+          
           # Use Node.js to properly build JSON payload with escaping
-          PAYLOAD=$(node <<EOF
+          # Write Node.js script to temp file to avoid heredoc escaping issues
+          cat > /tmp/discord_payload.js <<'JS_EOF'
           const issue = ${{ toJSON(github.event.issue) }};
           const repo = "${{ github.repository }}";
+          const emoji = process.env.EMOJI || '📋';
+          const title = process.env.TITLE || 'Issue Updated';
+          const color = parseInt(process.env.COLOR || '3447003', 10);
           
-          // Format labels
+          // Format labels - use string concatenation to avoid template literal issues
           const labels = issue.labels && issue.labels.length > 0
-            ? issue.labels.map(l => \`\`\${l.name}\`\`).join(' ')
+            ? issue.labels.map(function(l) { return '`' + l.name + '`'; }).join(' ')
             : '*No labels*';
           
           // Truncate body
@@ -138,14 +145,14 @@ jobs:
           
           // Build embed
           const embed = {
-            title: \`$EMOJI $TITLE\`,
-            description: \`**\${issue.title}**\`,
+            title: emoji + ' ' + title,
+            description: '**' + issue.title + '**',
             url: issue.html_url,
-            color: parseInt("$COLOR", 10),
+            color: color,
             fields: [
               {
                 name: 'Issue #',
-                value: \`#\${issue.number}\`,
+                value: '#' + issue.number,
                 inline: true
               },
               {
@@ -175,8 +182,10 @@ jobs:
           };
           
           console.log(JSON.stringify({ embeds: [embed] }));
-          EOF
-          )
+          JS_EOF
+          
+          # Run the Node.js script
+          PAYLOAD=$(node /tmp/discord_payload.js)
           
           # Send to Discord with error handling
           HTTP_CODE=$(curl -s -o /tmp/discord_response.txt -w "%{http_code}" \
@@ -220,5 +229,5 @@ jobs:
           fi
           
           # Clean up
-          rm -f /tmp/discord_response.txt
+          rm -f /tmp/discord_response.txt /tmp/discord_payload.js
 

@@ -60,13 +60,22 @@ jobs:
           esac
           
           # Use Node.js to properly build JSON payload with escaping
+<<<<<<< Updated upstream
           PAYLOAD=$(node <<EOF
+=======
+          # Write Node.js script to temp file (no quotes on heredoc to allow GitHub Actions expansion)
+          cat > /tmp/discord_payload.js <<JS_EOF
+>>>>>>> Stashed changes
           const issue = ${{ toJSON(github.event.issue) }};
           const repo = "${{ github.repository }}";
           
           // Format labels
           const labels = issue.labels && issue.labels.length > 0
+<<<<<<< Updated upstream
             ? issue.labels.map(l => \`\`\${l.name}\`\`).join(' ')
+=======
+            ? issue.labels.map(function(l) { return String.fromCharCode(96) + l.name + String.fromCharCode(96); }).join(' ')
+>>>>>>> Stashed changes
             : '*No labels*';
           
           // Truncate body

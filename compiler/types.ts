@@ -2,6 +2,7 @@ export interface ZenFile {
   html: string;
   scripts: ScriptBlock[];
   styles: StyleBlock[];
+  functionProps?: Set<string>; // Function names passed as props to components
 }
 
 export interface ScriptBlock {

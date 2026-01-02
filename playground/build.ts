@@ -1,3 +1,3 @@
 import { compile } from "../compiler"
 
-compile("./playground/index.zen", "./playground/dist")
+compile("./playground/pages/index.zen", "./playground/dist")

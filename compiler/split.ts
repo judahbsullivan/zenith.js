@@ -1,4 +1,4 @@
-import type { ZenFile, StateBinding } from "./types"
+import type { ZenFile, StateBinding, ScriptBlock } from "./types"
 import * as parse5 from "parse5"
 import { extractStateDeclarations, extractStateDeclarationsWithLocation, transformStateDeclarations, type StateDeclarationInfo } from "./parse"
 import { extractEventHandlers, detectStateMutations, validateStateMutations, type InlineHandlerInfo } from "./mutation"
@@ -101,12 +101,22 @@ function transformTextBindings(
           newChildNodes.push(child);
         } else {
           // Validate all bindings reference declared states
+          // Skip validation for instance-scoped state names (__zen_comp_*_stateName)
+          // These are component states that have already been transformed during inlining
           for (const match of matches) {
             const m = match as RegExpMatchArray;
             const stateName = m[1];
-            if (!stateName || !declaredStates.has(stateName)) {
+            if (!stateName) continue;
+            
+            // Skip validation for instance-scoped component state names
+            // These are generated during component inlining (e.g., __zen_comp_0_clicks)
+            if (stateName.startsWith('__zen_')) {
+              continue;
+            }
+            
+            if (!declaredStates.has(stateName)) {
               throw new Error(
-                `Compiler Error: Binding "{ ${stateName || 'unknown'} }" references undeclared state. ` +
+                `Compiler Error: Binding "{ ${stateName} }" references undeclared state. ` +
                 `Declared states: ${Array.from(declaredStates).join(', ') || '(none)'}`
               );
             }
@@ -203,7 +213,7 @@ function transformTextBindings(
 
 // Transform :class and :value attributes to data-zen-* attributes
 // Returns: { transformedHtml, bindings } where bindings contains attribute binding info
-function transformAttributeBindings(html: string): { transformedHtml: string; bindings: Array<{ type: 'class' | 'value'; expression: string }> } {
+function transformAttributeBindings(html: string, scripts: ScriptBlock[]): { transformedHtml: string; bindings: Array<{ type: 'class' | 'value'; expression: string }> } {
   const document = parse5.parse(html);
   const bindings: Array<{ type: 'class' | 'value'; expression: string }> = [];
   
@@ -237,6 +247,11 @@ function transformAttributeBindings(html: string): { transformedHtml: string; bi
   }
   
   walk(document);
+  
+  // NOTE: Component state transformation is now handled in component-process.ts
+  // via transformStateInHtml, which only transforms component INTERNAL state.
+  // Props are direct bindings and should NOT be transformed here.
+  // This function is kept for backward compatibility but does nothing now.
   
   // Serialize back to HTML string
   return {
@@ -307,6 +322,11 @@ export function splitZen(file: ZenFile) {
   // Extract event handlers from HTML (including inline arrow functions)
   const { eventHandlers, inlineHandlers } = extractEventHandlers(file.html);
   
+  // Also add function props to event handlers (functions passed as props can mutate state)
+  if (file.functionProps) {
+    file.functionProps.forEach(funcName => eventHandlers.add(funcName));
+  }
+  
   // Generate function code for inline handlers and create a map
   // Map: arrow function body -> generated function name
   const inlineHandlerMap = new Map<string, string>(); // arrow body -> function name
@@ -353,7 +373,7 @@ export function splitZen(file: ZenFile) {
   const { transformedHtml: htmlAfterEvents, eventTypes } = transformEventAttributes(file.html, inlineHandlerMap);
 
   // Then transform attribute bindings (:class, :value)
-  const { transformedHtml: htmlAfterAttributeBindings, bindings } = transformAttributeBindings(htmlAfterEvents);
+  const { transformedHtml: htmlAfterAttributeBindings, bindings } = transformAttributeBindings(htmlAfterEvents, file.scripts);
 
   // Then transform text bindings (this will validate against declared states)
   const { transformedHtml: htmlAfterBindings, stateBindings } = transformTextBindings(
@@ -366,9 +386,31 @@ export function splitZen(file: ZenFile) {
 
   // Transform scripts to remove state declarations (runtime will handle them)
   // Use scriptsWithInlineHandlers instead of file.scripts to include injected inline handlers
-  const transformedScripts = scriptsWithInlineHandlers.map(s => {
+  // Also register functions on window so they can be accessed by components
+  const transformedScripts = scriptsWithInlineHandlers.map((s, index) => {
     if (!s) return '';
-    return transformStateDeclarations(s.content);
+    let transformed = transformStateDeclarations(s.content);
+    
+    // Extract function declarations and register them on window
+    // This allows components to access parent functions via props
+    const functionRegex = /function\s+(\w+)\s*\([^)]*\)\s*\{/g;
+    const functionNames: string[] = [];
+    let match;
+    while ((match = functionRegex.exec(transformed)) !== null) {
+      if (match[1]) {
+        functionNames.push(match[1]);
+      }
+    }
+    
+    // Register functions on window (only if not already registered)
+    if (functionNames.length > 0) {
+      const registrationCode = functionNames.map(name => 
+        `  if (typeof window.${name} === 'undefined') { window.${name} = ${name}; }`
+      ).join('\n');
+      transformed += `\n\n// Register functions on window for component access\n${registrationCode}`;
+    }
+    
+    return transformed;
   });
 
   return {

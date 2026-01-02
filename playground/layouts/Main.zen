@@ -1,0 +1,54 @@
+<html>
+<head>
+    <title>Zenith - Phase 3 Components</title>
+</head>
+<body>
+    <script>
+type Props = {
+  title?: string;
+}
+
+state title = props.title || 'My App'
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            box-sizing: border-box;
+        }
+
+        header {
+            background: #f0f0f0;
+            padding: 16px;
+        }
+
+        footer {
+            background: #f0f0f0;
+            padding: 16px;
+            margin-top: 20px;
+        }
+
+        main {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            min-height: 100vh;
+            width: 100%;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+
+    <header>
+        <h1>{ title }</h1>
+    </header>
+
+    <main>
+        <Slot />
+    </main>
+
+    <footer>Footer content here</footer>
+</body>
+
+</html>
+

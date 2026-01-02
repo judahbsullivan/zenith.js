@@ -1,0 +1,30 @@
+<script>
+type Props = {
+  onClick?: () => void
+  clicks: number
+}
+</script>
+
+<style>
+.btn {
+  padding: 8px 16px;
+  background: #007bff;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-clicked {
+  background: #0056b3;
+}
+</style>
+
+<button
+  class="btn"
+  :class="{ 'btn-clicked': clicks > 0 }"
+  onclick="onClick"
+>
+  Click Me { clicks }
+</button>
+

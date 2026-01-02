@@ -1,0 +1,22 @@
+<script>
+  state clicks = 0
+
+  function decrement() {
+    clicks -= 1
+  }
+
+  function increment() {
+    clicks += 1
+  }
+</script>
+
+<Main title="Home Page">
+  <div>
+    <h2>Welcome to Zenith Phase 3!</h2>
+    <p>Total clicks: { clicks }</p>
+    <p>This page demonstrates the component system with layouts and components.</p>
+    <Button clicks={clicks} onClick={decrement} />
+    <Button clicks={clicks} onClick={increment} />
+  </div>
+</Main>
+

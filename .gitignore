@@ -8,6 +8,7 @@ node_modules
 # output
 out
 dist
+**/dist
 *.tgz
 
 # code coverage
@@ -46,3 +47,9 @@ scripts/*.sh
 
 # Local tickets/issue tracking
 tickets/
+
+# dist output (build artifacts - should not be committed)
+**/dist/
+dist/
+test-dist/
+app/dist/

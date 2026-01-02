@@ -1,0 +1,23 @@
+<Main title="About Us">
+  <div>
+    <h1>About Zenith</h1>
+    <p>Zenith is a modern web framework with file-based routing.</p>
+    
+    <div style="margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 8px;">
+      <h3>Route Information</h3>
+      <p>This page is rendered from <code>pages/about.zen</code></p>
+      <p>Current path: <code>/about</code></p>
+    </div>
+    
+    <nav style="margin-top: 20px;">
+      <h3>Navigation</h3>
+      <ul style="list-style: none; padding: 0;">
+        <li><a href="/">Home</a></li>
+        <li><a href="/about">About (current)</a></li>
+        <li><a href="/blog">Blog</a></li>
+        <li><a href="/blog/123">Blog Post 123</a></li>
+        <li><a href="/posts/hello/world">Posts Catch-all</a></li>
+      </ul>
+    </nav>
+  </div>
+</Main>

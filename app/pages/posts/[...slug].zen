@@ -1,0 +1,61 @@
+<script>
+// Access route params from the global route state
+const route = window.__zenith_route || { params: {} };
+const slug = route.params.slug || '';
+const slugParts = slug.split('/');
+
+// Update the display when route changes
+if (window.__zenith_router) {
+  window.__zenith_router.onRouteChange(function(newRoute) {
+    const slugEl = document.getElementById('catch-all-slug');
+    const partsEl = document.getElementById('slug-parts');
+    if (slugEl) {
+      slugEl.textContent = newRoute.params.slug || '(empty)';
+    }
+    if (partsEl) {
+      const parts = (newRoute.params.slug || '').split('/');
+      partsEl.innerHTML = parts.map(function(p, i) {
+        return '<li>Part ' + (i + 1) + ': <code>' + p + '</code></li>';
+      }).join('');
+    }
+  });
+}
+</script>
+
+<Main title="Posts - Catch All">
+  <div>
+    <h1>Catch-All Route</h1>
+    
+    <div style="margin: 20px 0; padding: 20px; background: #f8e8f4; border-radius: 8px;">
+      <h2>Slug: <span id="catch-all-slug"></span></h2>
+      <h3>Slug Parts:</h3>
+      <ul id="slug-parts"></ul>
+    </div>
+    
+    <div style="margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 8px;">
+      <h3>Route Information</h3>
+      <p>This page is rendered from <code>pages/posts/[...slug].zen</code></p>
+      <p>Route pattern: <code>/posts/*slug</code></p>
+      <p>This catches all paths starting with <code>/posts/</code></p>
+    </div>
+    
+    <div style="margin: 20px 0;">
+      <h3>Try Different Paths</h3>
+      <ul>
+        <li><a href="/posts/hello">posts/hello</a></li>
+        <li><a href="/posts/hello/world">posts/hello/world</a></li>
+        <li><a href="/posts/2024/01/my-post">posts/2024/01/my-post</a></li>
+        <li><a href="/posts/a/b/c/d/e">posts/a/b/c/d/e</a></li>
+      </ul>
+    </div>
+    
+    <nav style="margin-top: 20px;">
+      <h3>Navigation</h3>
+      <ul style="list-style: none; padding: 0;">
+        <li><a href="/">Home</a></li>
+        <li><a href="/about">About</a></li>
+        <li><a href="/blog">Blog</a></li>
+      </ul>
+    </nav>
+  </div>
+</Main>

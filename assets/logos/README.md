@@ -26,7 +26,7 @@ cd assets/logos
 **Option 2: Set icon for all .zen files in a directory**
 ```bash
 cd assets/logos
-find ../playground -name "*.zen" -exec ./set-zen-icon.sh {} \;
+find ../app -name "*.zen" -exec ./set-zen-icon.sh {} \;
 ```
 
 **Option 3: Manual method**

@@ -1,0 +1,70 @@
+<script>
+  function parentCallback(clicks) {
+    console.log('Parent received clicks', clicks)
+  }
+</script>
+
+<Main title="Home Page">
+  <div>
+    <h1>Zenith File-Based Router</h1>
+    <h2>Welcome to Zenith!</h2>
+    <p>This is the home page demonstrating file-based routing with SPA navigation.</p>
+    
+    <div style="margin: 20px 0; padding: 20px; background: #e8f8e8; border-radius: 8px;">
+      <h3>🚀 Router Features</h3>
+      <ul>
+        <li>✅ File-based routing from <code>pages/</code> directory</li>
+        <li>✅ Dynamic routes with <code>[param]</code> syntax</li>
+        <li>✅ Catch-all routes with <code>[...slug]</code> syntax</li>
+        <li>✅ SPA navigation (no page reloads)</li>
+        <li>✅ Hard refresh works on any route</li>
+        <li>✅ Back/forward navigation works</li>
+      </ul>
+    </div>
+    
+    <div style="margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 8px;">
+      <h3>📍 Navigation</h3>
+      <p>Click links below to test routing (uses standard <code>&lt;a&gt;</code> tags for now):</p>
+      <nav>
+        <ul style="list-style: none; padding: 0; display: flex; gap: 16px; flex-wrap: wrap;">
+          <li><a href="/" style="padding: 8px 16px; background: #007bff; color: white; text-decoration: none; border-radius: 4px;">Home</a></li>
+          <li><a href="/about" style="padding: 8px 16px; background: #007bff; color: white; text-decoration: none; border-radius: 4px;">About</a></li>
+          <li><a href="/blog" style="padding: 8px 16px; background: #007bff; color: white; text-decoration: none; border-radius: 4px;">Blog</a></li>
+          <li><a href="/blog/42" style="padding: 8px 16px; background: #28a745; color: white; text-decoration: none; border-radius: 4px;">Blog Post #42</a></li>
+          <li><a href="/posts/hello/world" style="padding: 8px 16px; background: #dc3545; color: white; text-decoration: none; border-radius: 4px;">Catch-All Route</a></li>
+        </ul>
+      </nav>
+    </div>
+    
+    <div style="margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 8px;">
+      <h3>🧩 Component Test</h3>
+      <p>Components still work within routed pages:</p>
+      
+      <div style="margin: 15px 0;">
+        <h4>Button with Parent Callback</h4>
+        <Button onClick="parentCallback" />
+        <p style="font-size: 12px; color: #666;">Check console for "Parent received clicks" messages</p>
+      </div>
+      
+      <div style="margin: 15px 0;">
+        <h4>Link Component</h4>
+        <Link href="/about" label="About Page" />
+      </div>
+    </div>
+    
+    <div style="margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: #f8f8f8;">
+      <h3>📁 Route Structure</h3>
+      <pre style="background: #2d2d2d; color: #f8f8f2; padding: 16px; border-radius: 4px; overflow-x: auto;">
+pages/
+├── index.zen          → /
+├── about.zen          → /about
+├── blog/
+│   ├── index.zen      → /blog
+│   └── [id].zen       → /blog/:id
+└── posts/
+    └── [...slug].zen  → /posts/*slug
+      </pre>
+    </div>
+  </div>
+</Main>
+

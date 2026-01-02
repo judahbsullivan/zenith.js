@@ -1,0 +1,32 @@
+<Main title="Blog">
+  <div>
+    <h1>Blog</h1>
+    <p>Welcome to our blog! Here are some recent posts:</p>
+    
+    <div style="margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 8px;">
+      <h3>Route Information</h3>
+      <p>This page is rendered from <code>pages/blog/index.zen</code></p>
+      <p>Current path: <code>/blog</code></p>
+    </div>
+    
+    <div style="margin: 20px 0;">
+      <h3>Recent Posts</h3>
+      <ul>
+        <li><a href="/blog/1">Getting Started with Zenith</a></li>
+        <li><a href="/blog/2">File-Based Routing Explained</a></li>
+        <li><a href="/blog/3">Building Components</a></li>
+        <li><a href="/blog/hello-world">Hello World Post</a></li>
+      </ul>
+    </div>
+    
+    <nav style="margin-top: 20px;">
+      <h3>Navigation</h3>
+      <ul style="list-style: none; padding: 0;">
+        <li><a href="/">Home</a></li>
+        <li><a href="/about">About</a></li>
+        <li><a href="/blog">Blog (current)</a></li>
+      </ul>
+    </nav>
+  </div>
+</Main>
+

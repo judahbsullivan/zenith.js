@@ -13,7 +13,8 @@
     "Judah Sullivan"
   ],
   "scripts": {
-    "dev": "bun ./playground/serve.ts",
+    "dev": "bun ./runtime/serve.ts",
+    "build": "bun ./runtime/build.ts",
     "format": "prettier --write \"**/*.ts\"",
     "format:check": "prettier --check \"**/*.ts\""
   },

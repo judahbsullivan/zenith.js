@@ -1,0 +1,53 @@
+<script>
+// Access route params from the global route state
+const route = window.__zenith_route || { params: {} };
+const postId = route.params.id || 'unknown';
+
+// Update the display when route changes
+if (window.__zenith_router) {
+  window.__zenith_router.onRouteChange(function(newRoute) {
+    const idEl = document.getElementById('post-id');
+    if (idEl) {
+      idEl.textContent = newRoute.params.id || 'unknown';
+    }
+  });
+}
+</script>
+
+<Main title="Blog Post">
+  <div>
+    <h1>Blog Post</h1>
+    
+    <div style="margin: 20px 0; padding: 20px; background: #e8f4f8; border-radius: 8px;">
+      <h2>Post ID: <span id="post-id" data-zen-bind="postId"></span></h2>
+      <p>This is a dynamic route page!</p>
+    </div>
+    
+    <div style="margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 8px;">
+      <h3>Route Information</h3>
+      <p>This page is rendered from <code>pages/blog/[id].zen</code></p>
+      <p>Route pattern: <code>/blog/:id</code></p>
+      <p>The <code>id</code> parameter is extracted from the URL.</p>
+    </div>
+    
+    <div style="margin: 20px 0;">
+      <h3>Try Different IDs</h3>
+      <ul>
+        <li><a href="/blog/1">Post 1</a></li>
+        <li><a href="/blog/42">Post 42</a></li>
+        <li><a href="/blog/hello-world">Post hello-world</a></li>
+        <li><a href="/blog/my-awesome-post">Post my-awesome-post</a></li>
+      </ul>
+    </div>
+    
+    <nav style="margin-top: 20px;">
+      <h3>Navigation</h3>
+      <ul style="list-style: none; padding: 0;">
+        <li><a href="/">Home</a></li>
+        <li><a href="/about">About</a></li>
+        <li><a href="/blog">Blog Index</a></li>
+      </ul>
+    </nav>
+  </div>
+</Main>
+

@@ -25,7 +25,7 @@ export function processComponents(entryFile: ZenFile, entryPath: string): ZenFil
   // For file-based routing: if entry is in pages/, look for components/layouts in parent directory
   // Otherwise, look in the same directory as the entry file
   let baseDir = entryDir;
-  if (entryDir.endsWith("pages") || entryDir.endsWith(path.join("playground", "pages"))) {
+  if (entryDir.endsWith("pages") || entryDir.endsWith(path.join("app", "pages"))) {
     baseDir = path.dirname(entryDir);
   }
   

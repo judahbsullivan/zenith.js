@@ -8,15 +8,40 @@
   function increment() {
     clicks += 1
   }
+
+  function handleClick(count) {
+    console.log('Clicked', count)
+  }
 </script>
 
 <Main title="Home Page">
   <div>
+    <h1>Component Reactivity Test</h1>
     <h2>Welcome to Zenith Phase 3!</h2>
     <p>Total clicks: { clicks }</p>
     <p>This page demonstrates the component system with layouts and components.</p>
-    <Button clicks={clicks} onClick={decrement} />
-    <Button clicks={clicks} onClick={increment} />
+    
+    <div style="margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 8px;">
+      <h3>Validation UI</h3>
+      <p>Test component reactivity:</p>
+      
+      <div style="margin: 10px 0;">
+        <Button onClick={handleClick} />
+      </div>
+      
+      <div style="margin: 10px 0;">
+        <Link href="/about" label="About Page" />
+      </div>
+      
+      <div style="margin: 10px 0;">
+        <Button />
+      </div>
+      
+      <div style="margin: 10px 0;">
+        <Button clicks={clicks} onClick={decrement} />
+        <Button clicks={clicks} onClick={increment} />
+      </div>
+    </div>
   </div>
 </Main>
 

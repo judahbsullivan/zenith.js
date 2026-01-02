@@ -680,7 +680,34 @@ function inlineComponentIntoHtml(
           // Transform state references in the fresh clone
           function transformStateInHtml(node: any): void {
             // Transform text bindings: { stateName } to { __zen_instanceId_stateName }
+            // Also inline prop values: { propName } -> actual prop value
             if (node.nodeName === "#text" && node.value) {
+              // First, inline prop values (props are constants, not reactive)
+              for (const [propName, propValue] of props.entries()) {
+                // Check if propValue is a simple identifier (function/state reference) - don't inline those
+                let trimmedValue = propValue.trim();
+                if (trimmedValue.startsWith('{') && trimmedValue.endsWith('}')) {
+                  trimmedValue = trimmedValue.slice(1, -1).trim();
+                }
+                const isFunctionOrVar = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(trimmedValue) && 
+                                        !trimmedValue.startsWith('"') && 
+                                        !trimmedValue.startsWith("'");
+                
+                // Only inline if it's not a function/state reference (i.e., it's a literal value)
+                if (!isFunctionOrVar) {
+                  // Inline the prop value directly
+                  const regex = new RegExp(`\\{\\s*${propName}\\s*\\}`, 'g');
+                  // Get the actual prop value - remove quotes for text content
+                  let inlineValue = propValue.trim();
+                  if ((inlineValue.startsWith('"') && inlineValue.endsWith('"')) ||
+                      (inlineValue.startsWith("'") && inlineValue.endsWith("'"))) {
+                    inlineValue = inlineValue.slice(1, -1); // Remove quotes
+                  }
+                  node.value = node.value.replace(regex, inlineValue);
+                }
+              }
+              
+              // Then transform state references to instance-scoped names
               for (const stateName of stateDecls) {
                 const instanceStateName = `__zen_${safeInstanceId}_${stateName}`;
                 const regex = new RegExp(`\\{\\s*${stateName}\\s*\\}`, 'g');
@@ -689,19 +716,84 @@ function inlineComponentIntoHtml(
             }
             
             // Transform attribute bindings (:class, :value) to use instance-scoped state names
+            // Also inline prop values in attribute values and handle :attr bindings
             if (node.attrs && Array.isArray(node.attrs)) {
               for (const attr of node.attrs) {
-                // Transform :class/:value (before split.ts) and data-zen-class/data-zen-value (after split.ts)
+                let attrValue = attr.value || '';
+                
+                // Handle :attr bindings (like :href, :src) - inline prop values or transform state references
+                if (attr.name && attr.name.startsWith(':') && attr.name !== ':class' && attr.name !== ':value') {
+                  // This is a non-reactive attribute binding (e.g., :href)
+                  // Inline prop values first
+                  for (const [propName, propValue] of props.entries()) {
+                    let trimmedValue = propValue.trim();
+                    if (trimmedValue.startsWith('{') && trimmedValue.endsWith('}')) {
+                      trimmedValue = trimmedValue.slice(1, -1).trim();
+                    }
+                    const isFunctionOrVar = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(trimmedValue) && 
+                                            !trimmedValue.startsWith('"') && 
+                                            !trimmedValue.startsWith("'");
+                    
+                    if (!isFunctionOrVar) {
+                      // Inline prop value for attribute
+                      const propRegex = new RegExp(`\\b${propName}\\b`, 'g');
+                      let inlineValue = propValue.trim();
+                      // Remove quotes for attribute values (parse5 will handle quoting)
+                      if ((inlineValue.startsWith('"') && inlineValue.endsWith('"')) ||
+                          (inlineValue.startsWith("'") && inlineValue.endsWith("'"))) {
+                        inlineValue = inlineValue.slice(1, -1); // Remove quotes
+                      }
+                      attrValue = attrValue.replace(propRegex, inlineValue);
+                    }
+                  }
+                  
+                  // Transform state references
+                  for (const stateName of stateDecls) {
+                    const instanceStateName = `__zen_${safeInstanceId}_${stateName}`;
+                    const stateRefRegex = new RegExp(`\\b${stateName}\\b`, 'g');
+                    attrValue = attrValue.replace(stateRefRegex, instanceStateName);
+                  }
+                  
+                  // Replace :attr with regular attr (remove colon)
+                  attr.name = attr.name.slice(1);
+                  attr.value = attrValue;
+                }
+                
+                // Handle reactive bindings (:class, :value)
                 const isBindingAttr = attr.name === ':class' || attr.name === ':value' || 
                                      attr.name === 'data-zen-class' || attr.name === 'data-zen-value';
                 if (isBindingAttr) {
-                  let attrValue = attr.value || '';
                   for (const stateName of stateDecls) {
                     const instanceStateName = `__zen_${safeInstanceId}_${stateName}`;
                     // Replace state references in attribute values using word boundaries
                     // This handles expressions like "{ 'btn': true, 'btn-clicked': clicks > 0 }"
                     const stateRefRegex = new RegExp(`\\b${stateName}\\b`, 'g');
                     attrValue = attrValue.replace(stateRefRegex, instanceStateName);
+                  }
+                  attr.value = attrValue;
+                }
+                
+                // Handle regular attributes with {propName} syntax
+                if (attrValue && attrValue.includes('{')) {
+                  // Inline prop values in attribute values
+                  for (const [propName, propValue] of props.entries()) {
+                    let trimmedValue = propValue.trim();
+                    if (trimmedValue.startsWith('{') && trimmedValue.endsWith('}')) {
+                      trimmedValue = trimmedValue.slice(1, -1).trim();
+                    }
+                    const isFunctionOrVar = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(trimmedValue) && 
+                                            !trimmedValue.startsWith('"') && 
+                                            !trimmedValue.startsWith("'");
+                    
+                    if (!isFunctionOrVar) {
+                      // Inline prop value
+                      const propRegex = new RegExp(`\\{\\s*${propName}\\s*\\}`, 'g');
+                      let inlineValue = propValue.trim();
+                      if (inlineValue.startsWith('"') || inlineValue.startsWith("'")) {
+                        inlineValue = inlineValue.slice(1, -1); // Remove quotes for attribute value
+                      }
+                      attrValue = attrValue.replace(propRegex, inlineValue);
+                    }
                   }
                   attr.value = attrValue;
                 }
@@ -890,11 +982,27 @@ function inlineComponentIntoHtml(
     
     // Now replace state references (but not in state declarations, which we already transformed)
     // Replace ALL occurrences of state name with instance-scoped name
+    // Important: Use window.property to ensure setter is triggered for mutations
     for (const stateName of allStateDecls) {
       const instanceStateName = `__zen_${safeInstanceId}_${stateName}`;
       // Replace state references using word boundaries
+      // For assignments (including +=, -=, etc.), use window property to trigger setters
       // This handles: clicks, clicks += 1, clicks > 0, console.log("clicked", clicks)
       // But NOT: state clicks = 0 (already transformed above)
+      
+      // Replace assignment operations first (including +=, -=, *=, /=, etc.)
+      const assignmentOps = ['\\+=', '-=', '\\*=', '/=', '%=', '\\*\\*='];
+      for (const op of assignmentOps) {
+        const assignmentRegex = new RegExp(`\\b${stateName}\\s*${op}`, 'g');
+        processedScript = processedScript.replace(assignmentRegex, `window.${instanceStateName} ${op.replace('\\', '')}`);
+      }
+      
+      // Then replace regular assignments (stateName = ...)
+      const simpleAssignRegex = new RegExp(`\\b${stateName}\\s*=\\s*(?!\\s*[=!<>])`, 'g');
+      processedScript = processedScript.replace(simpleAssignRegex, `window.${instanceStateName} =`);
+      
+      // Finally, replace all other references (reads) with instance-scoped name
+      // For reads, we can use the variable directly since the getter will be called
       const stateRefRegex = new RegExp(`\\b${stateName}\\b`, 'g');
       processedScript = processedScript.replace(stateRefRegex, instanceStateName);
     }

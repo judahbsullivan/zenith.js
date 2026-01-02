@@ -1,7 +1,16 @@
 <script>
 type Props = {
   onClick?: () => void
-  clicks: number
+  clicks?: number
+}
+
+state count = 0
+
+function handleClick() {
+  count += 1
+  if (onClick) {
+    onClick(count)
+  }
 }
 </script>
 
@@ -13,18 +22,24 @@ type Props = {
   border-radius: 4px;
   cursor: pointer;
   border: none;
+  margin: 4px;
 }
 
 .btn-clicked {
   background: #0056b3;
 }
+
+.btn-large {
+  padding: 12px 24px;
+  font-size: 16px;
+}
 </style>
 
 <button
   class="btn"
-  :class="{ 'btn-clicked': clicks > 0 }"
-  onclick="onClick"
+  :class="{ 'btn-clicked': count > 0, 'btn-large': count > 5 }"
+  onclick="handleClick"
 >
-  Click Me { clicks }
+  Click Me { count }
 </button>
 

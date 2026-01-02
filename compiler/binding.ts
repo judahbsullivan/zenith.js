@@ -1,8 +1,21 @@
 // compiler/binding.ts
 // Phase 2: Reactive text bindings runtime generator
 // Generates code to update DOM when state values change
+// Extended to support component instance-scoped state
 
 import type { StateBinding } from "./types"
+
+// Extract instance ID and base state name from instance-scoped state name
+// e.g., "__zen_comp_0_clicks" -> { instanceId: "comp-0", baseState: "clicks" }
+function parseInstanceState(stateName: string): { instanceId: string; baseState: string } | null {
+  const match = stateName.match(/^__zen_comp_(\d+)_(.+)$/);
+  if (match) {
+    const instanceNum = match[1];
+    const baseState = match[2];
+    return { instanceId: `comp-${instanceNum}`, baseState };
+  }
+  return null;
+}
 
 export function generateBindingRuntime(
   stateBindings: StateBinding[],
@@ -13,6 +26,26 @@ export function generateBindingRuntime(
   }
 
   const stateNames = Array.from(stateDeclarations.keys());
+
+  // Separate global state and instance-scoped state
+  const globalStates = new Set<string>();
+  const instanceStates = new Map<string, Map<string, string[]>>(); // instanceId -> baseState -> fullStateNames
+
+  for (const stateName of stateNames) {
+    const instanceInfo = parseInstanceState(stateName);
+    if (instanceInfo) {
+      if (!instanceStates.has(instanceInfo.instanceId)) {
+        instanceStates.set(instanceInfo.instanceId, new Map());
+      }
+      const instanceMap = instanceStates.get(instanceInfo.instanceId)!;
+      if (!instanceMap.has(instanceInfo.baseState)) {
+        instanceMap.set(instanceInfo.baseState, []);
+      }
+      instanceMap.get(instanceInfo.baseState)!.push(stateName);
+    } else {
+      globalStates.add(stateName);
+    }
+  }
 
   // Generate binding update map - collect all nodes for each state
   // Order is preserved: bindings are processed in the order they appear in stateBindings array
@@ -31,7 +64,16 @@ export function generateBindingRuntime(
     // This preserves the DOM traversal order from compilation
     for (const binding of stateBinding.bindings) {
       const bindId = `bind-${binding.nodeIndex}`;
-      selectors.push(`span[data-zen-bind="${stateBinding.stateName}"][data-zen-bind-id="${bindId}"]`);
+      
+      // Check if this is an instance-scoped binding
+      const instanceInfo = parseInstanceState(stateBinding.stateName);
+      if (instanceInfo) {
+        // Scope selector to component instance root
+        selectors.push(`[data-zen-instance="${instanceInfo.instanceId}"] span[data-zen-bind="${stateBinding.stateName}"][data-zen-bind-id="${bindId}"]`);
+      } else {
+        // Global binding
+        selectors.push(`span[data-zen-bind="${stateBinding.stateName}"][data-zen-bind-id="${bindId}"]`);
+      }
     }
   }
 
@@ -63,11 +105,11 @@ export function generateBindingRuntime(
     ? `__zen_bindings = {\n${bindingMapEntries.join(",\n")}\n  };`
     : `__zen_bindings = {};`;
 
-  // Generate state initialization code
-  const stateInitCode = stateNames.map(name => {
+  // Generate global state initialization code
+  const globalStateInitCode = Array.from(globalStates).map(name => {
     const initialValue = stateDeclarations.get(name) || "undefined";
     return `
-  // Initialize state: ${name}
+  // Initialize global state: ${name}
   (function() {
     let __zen_${name} = ${initialValue};
     Object.defineProperty(window, "${name}", {
@@ -83,13 +125,86 @@ export function generateBindingRuntime(
   })();`;
   }).join("");
 
+  // Generate instance state initialization code
+  const instanceStateInitCode: string[] = [];
+  for (const [instanceId, baseStateMap] of instanceStates.entries()) {
+    const safeInstanceId = instanceId.replace(/-/g, '_');
+    
+    for (const [baseState, fullStateNames] of baseStateMap.entries()) {
+      // For each instance, create a state proxy scoped to that instance
+      // Only process the first fullStateName (they should all have the same instance)
+      const fullStateName = fullStateNames[0];
+      const initialValue = stateDeclarations.get(fullStateName) || "undefined";
+      
+      instanceStateInitCode.push(`
+  // Initialize instance-scoped state: ${fullStateName} (${instanceId}.${baseState})
+  (function() {
+    const instanceRoot = document.querySelector('[data-zen-instance="${instanceId}"]');
+    if (!instanceRoot) {
+      console.warn('[Zenith] Component instance "${instanceId}" not found in DOM');
+      return;
+    }
+    
+    let __zen_${safeInstanceId}_${baseState} = ${initialValue};
+    
+    // Create instance-scoped state proxy
+    const instanceState = new Proxy({}, {
+      get(target, prop) {
+        if (prop === '${baseState}') {
+          return __zen_${safeInstanceId}_${baseState};
+        }
+        return undefined;
+      },
+      set(target, prop, value) {
+        if (prop === '${baseState}') {
+          __zen_${safeInstanceId}_${baseState} = value;
+          // Trigger updates only for bindings within this instance
+          __zen_update_bindings("${fullStateName}", value);
+          return true;
+        }
+        return false;
+      }
+    });
+    
+    // Store instance state on window for component access
+    if (!window.__zen_instances) {
+      window.__zen_instances = {};
+    }
+    if (!window.__zen_instances["${instanceId}"]) {
+      window.__zen_instances["${instanceId}"] = instanceState;
+    } else {
+      window.__zen_instances["${instanceId}"].${baseState} = __zen_${safeInstanceId}_${baseState};
+    }
+    
+      // Create global property accessor for instance-scoped state
+    Object.defineProperty(window, "${fullStateName}", {
+      get: function() { return __zen_${safeInstanceId}_${baseState}; },
+      set: function(value) {
+        __zen_${safeInstanceId}_${baseState} = value;
+        // Update instance state object
+        if (window.__zen_instances && window.__zen_instances["${instanceId}"]) {
+          window.__zen_instances["${instanceId}"].${baseState} = value;
+        }
+        __zen_update_bindings("${fullStateName}", value);
+        // Also trigger attribute binding updates for this instance
+        if (window.__zen_update_attribute_bindings) {
+          window.__zen_update_attribute_bindings("${instanceId}");
+        }
+      },
+      enumerable: true,
+      configurable: true
+    });
+  })();`);
+    }
+  }
+
   // Generate initialization call (after DOM is ready)
   const initBindingsCode = stateNames.map(name => {
     return `    __zen_update_bindings("${name}", ${name});`;
   }).join("\n");
 
   return `
-// Phase 2: Reactive text bindings runtime
+// Phase 2: Reactive text bindings runtime (with component instance support)
 (function() {
   let __zen_bindings = {};
 
@@ -110,7 +225,8 @@ export function generateBindingRuntime(
     }
   }
 
-${stateInitCode}
+${globalStateInitCode}
+${instanceStateInitCode.join('')}
 
   // Initialize binding map and bindings after DOM is ready
   function __zen_init_bindings() {

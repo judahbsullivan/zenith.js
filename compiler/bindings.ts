@@ -38,7 +38,11 @@ export function generateAttributeBindingRuntime(bindings: Array<{ type: 'class' 
         try {
           // Re-evaluate expression in context of current state
           // Pass target (the state object) as parameter to the evaluator function
-          const result = binding.fn(target);
+          // If this binding has instance state, merge it with global state
+          const mergedState = binding.instanceState 
+            ? Object.assign({}, target, binding.instanceState)
+            : target;
+          const result = binding.fn(mergedState);
           
           if (binding.type === 'class') {
             updateClassBinding(binding.el, result);
@@ -63,6 +67,39 @@ export function generateAttributeBindingRuntime(bindings: Array<{ type: 'class' 
   
   // Make stateProxy available globally as 'state'
   window.state = stateProxy;
+  
+  // Function to update attribute bindings for a specific component instance
+  // Called when instance-scoped state changes
+  function updateAttributeBindingsForInstance(instanceId) {
+    const instanceRoot = document.querySelector('[data-zen-instance="' + instanceId + '"]');
+    if (!instanceRoot) return;
+    
+    // Update all bindings within this instance
+    bindingElements.forEach(binding => {
+      // Check if this binding belongs to the instance
+      const bindingInstanceRoot = findInstanceRoot(binding.el);
+      if (bindingInstanceRoot === instanceRoot) {
+        try {
+          const instanceState = getInstanceStateForElement(binding.el);
+          const mergedState = instanceState 
+            ? Object.assign({}, stateProxy, instanceState)
+            : stateProxy;
+          const result = binding.fn(mergedState);
+          
+          if (binding.type === 'class') {
+            updateClassBinding(binding.el, result);
+          } else if (binding.type === 'value') {
+            updateValueBinding(binding.el, result);
+          }
+        } catch (e) {
+          console.warn('[Zenith] Attribute binding evaluation error:', e, 'for expression:', binding.expression);
+        }
+      }
+    });
+  }
+  
+  // Expose update function globally so text binding runtime can trigger it
+  window.__zen_update_attribute_bindings = updateAttributeBindingsForInstance;
   
   // Helper: Evaluate class binding expression
   // Handles: objects, strings, empty objects, falsy values
@@ -107,6 +144,7 @@ export function generateAttributeBindingRuntime(bindings: Array<{ type: 'class' 
   
   // Helper: Safely evaluate expression string
   // Creates a function that evaluates the expression with state properties in scope
+  // Supports both global state (via state object) and instance-scoped state (via window)
   function createEvaluator(expression) {
     // Trim whitespace from expression
     let trimmed = expression.trim();
@@ -142,15 +180,20 @@ export function generateAttributeBindingRuntime(bindings: Array<{ type: 'class' 
       // Note: 'with' is deprecated but necessary for this use case in non-strict mode
       return function(state) {
         try {
-          // Use Function constructor to create evaluator with state in scope
-          // This allows expressions like "{ active: isActive }" where isActive refers to state.isActive
-          // For simple identifiers, evaluate them directly to access state properties
-          // For quoted strings that aren't identifiers, evaluate as string literals
-          // For object literals, evaluate as-is
+          // Merge state with window to access instance-scoped state variables
+          // This allows expressions to reference both global state and instance-scoped state
+          // Copy window properties that look like instance-scoped state to the merged context
+          const mergedContext = Object.assign({}, state);
+          for (const key in window) {
+            if (key.startsWith('__zen_comp_') && !(key in mergedContext)) {
+              mergedContext[key] = window[key];
+            }
+          }
           
           // Use Function constructor to create evaluator
-          // The 'with' statement makes state properties available as variables
+          // The 'with' statement makes state properties and instance-scoped state available as variables
           // This allows expressions like "{ active: isActive }" where isActive refers to state.isActive
+          // or instance-scoped variables like __zen_comp_0_clicks
           const func = new Function('state', 
             'try {' +
             '  with (state) {' +
@@ -161,7 +204,7 @@ export function generateAttributeBindingRuntime(bindings: Array<{ type: 'class' 
             '  return null;' +
             '}'
           );
-          const result = func(state);
+          const result = func(mergedContext);
           // console.log('[Zenith] Evaluated expression:', trimmed, 'result:', result, 'state:', state);
           return result;
         } catch (e) {
@@ -181,6 +224,45 @@ export function generateAttributeBindingRuntime(bindings: Array<{ type: 'class' 
     }
   }
   
+  // Helper: Find component instance root for an element
+  function findInstanceRoot(el) {
+    let current = el;
+    while (current) {
+      if (current.hasAttribute && current.hasAttribute('data-zen-instance')) {
+        return current;
+      }
+      current = current.parentElement;
+    }
+    return null;
+  }
+  
+  // Helper: Get instance-scoped state for an element
+  function getInstanceStateForElement(el) {
+    const instanceRoot = findInstanceRoot(el);
+    if (instanceRoot) {
+      const instanceId = instanceRoot.getAttribute('data-zen-instance');
+      if (instanceId && window.__zen_instances && window.__zen_instances[instanceId]) {
+        return window.__zen_instances[instanceId];
+      }
+    }
+    return null;
+  }
+  
+  // Enhanced evaluator that supports both global and instance-scoped state
+  function createEnhancedEvaluator(expression, instanceState) {
+    const baseEvaluator = createEvaluator(expression);
+    return function(state) {
+      // Merge global state and instance state
+      const mergedState = Object.assign({}, state);
+      if (instanceState) {
+        Object.assign(mergedState, instanceState);
+      }
+      // Also check window for instance-scoped state variables (e.g., __zen_comp_0_clicks)
+      // These are set up by the binding runtime
+      return baseEvaluator(mergedState);
+    };
+  }
+  
   // Initialize bindings after DOM is ready
   function initializeBindings() {
     // console.log('[Zenith] Initializing attribute bindings...');
@@ -196,10 +278,17 @@ export function generateAttributeBindingRuntime(bindings: Array<{ type: 'class' 
       const expression = el.getAttribute('data-zen-class');
       if (expression) {
         // console.log('[Zenith] Setting up :class binding:', expression, 'for element:', el);
-        const fn = createEvaluator(expression);
-        const result = fn(stateProxy);
+        const instanceState = getInstanceStateForElement(el);
+        const fn = createEnhancedEvaluator(expression, instanceState);
+        
+        // Use merged state for initial evaluation
+        const mergedState = Object.assign({}, stateProxy);
+        if (instanceState) {
+          Object.assign(mergedState, instanceState);
+        }
+        const result = fn(mergedState);
         updateClassBinding(el, result);
-        bindingElements.push({ el: el, type: 'class', expression, fn });
+        bindingElements.push({ el: el, type: 'class', expression, fn, instanceState });
         // console.log('[Zenith] Initial :class result:', result, 'applied classes:', el.className);
       }
     });
@@ -209,13 +298,24 @@ export function generateAttributeBindingRuntime(bindings: Array<{ type: 'class' 
       const expression = el.getAttribute('data-zen-value');
       if (expression) {
         // console.log('[Zenith] Setting up :value binding:', expression, 'for element:', el);
-        const fn = createEvaluator(expression);
-        const result = fn(stateProxy);
+        const instanceState = getInstanceStateForElement(el);
+        const fn = createEnhancedEvaluator(expression, instanceState);
+        
+        // Use merged state for initial evaluation
+        const mergedState = Object.assign({}, stateProxy);
+        if (instanceState) {
+          Object.assign(mergedState, instanceState);
+        }
+        const result = fn(mergedState);
         updateValueBinding(el, result);
-        bindingElements.push({ el: el, type: 'value', expression, fn });
+        bindingElements.push({ el: el, type: 'value', expression, fn, instanceState });
         // console.log('[Zenith] Initial :value result:', result, 'applied value:', el.value);
       }
     });
+    
+    // Instance state proxies are set up by the text binding runtime
+    // Attribute binding updates are triggered via window.__zen_update_attribute_bindings
+    // when instance-scoped state changes
     
     // console.log('[Zenith] Initialized', bindingElements.length, 'bindings. State object:', stateProxy);
   }

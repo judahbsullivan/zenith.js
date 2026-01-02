@@ -1,0 +1,11 @@
+<script>
+type Props = {
+  href: string;
+  label: string;
+}
+</script>
+
+<a :href="href">
+  {label}
+</a>
+

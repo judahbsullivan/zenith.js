@@ -41,6 +41,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # Shell scripts (local setup scripts)
 *.sh
 scripts/*.sh
+**/*.sh
 
 # Local editor configs
 .vscode-icons/

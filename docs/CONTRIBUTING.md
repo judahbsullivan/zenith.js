@@ -1,12 +1,7 @@
 # 💫 Contributing to Zenith
+## 📌 Prerequisites
 
-Thank you for your interest in contributing to Zenith! This guide will help you get started.
-
-## 🚀 Getting Started
-
-### 📌 Prerequisites
-
-Before you begin, join the [Discord Server](https://discord.gg/T85bBj8T3n) and ensure you have the following installed:
+> Before you begin, join the [Discord Server](https://discord.gg/T85bBj8T3n) and **ensure you have the following installed**:
 
 - **[Bun](https://bun.sh/)** (v1.0 or later) - Zenith uses Bun as its JavaScript runtime and package manager
 - **[Git](https://git-scm.com/)** - For version control
@@ -14,24 +9,19 @@ Before you begin, join the [Discord Server](https://discord.gg/T85bBj8T3n) and e
 ### Installation
 
 1. **Clone the repository (no fork)**
-   ```bash
-   git clone https://github.com/judahbsullivan/zenith.git
+   ```ts
+   git clone https://github.com/judahbsullivan/zenith.js.git
    cd zenith
    ```
-
 2. **Install dependencies**
-   ```bash
+   ```ts
    bun install
    ```
-
 3. **Run the development server**
-   ```bash
+   ```ts
    bun dev
    ```
-   This starts the development server. Open your browser to view the application.
-
 ## 🌿 Branching Strategy
-
 ### Option 1: Issue-Driven Development (Preferred)
 
 1. **Create or find an issue** on GitHub that describes the work you want to do
@@ -39,7 +29,7 @@ Before you begin, join the [Discord Server](https://discord.gg/T85bBj8T3n) and e
    - Branch name format: `{issue-number}-{short-description}`
    - Example: `33-contributing-md`
 3. **Pull the branch** to your local machine
-   ```bash
+   ```ts
    git fetch origin
    git checkout 33-contributing-md
    ```
@@ -49,12 +39,11 @@ Before you begin, join the [Discord Server](https://discord.gg/T85bBj8T3n) and e
 If you're working on something without an existing issue:
 
 1. **Branch from `main`**
-   ```bash
+   ```ts
    git checkout main
    git pull origin main
    git checkout -b {prefix}/{short-description}
    ```
-
 2. **Use appropriate prefix subfolder** based on the type of change:
    - `feat/` for new features → MINOR version bump (0.n.0)
    - `fix/` for bug fixes → PATCH version bump (0.0.n)
@@ -63,22 +52,18 @@ If you're working on something without an existing issue:
    - `test/` for adding or updating tests
    - `chore/` for maintenance tasks
 
-   Example: `feat/reactive-state` or `fix/router-navigation`
+Example: `feat/reactive-state` or `fix/router-navigation`
 
 ## 📝 Commit Strategy
-
-Zenith follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for consistent versioning and changelog generation.
+> Zenith follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for consistent versioning and changelog generation.
 
 ### Commit Message Format
 
-```
+```ts
 <type>[optional scope]: <description>
-
 [optional body]
-
 [optional footer(s)]
 ```
-
 ### Quick Reference
 
 | Prefix   | SemVer Impact | Example                          |
@@ -93,38 +78,29 @@ Zenith follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.
 **📌 For complete details, see [COMMITS.md](COMMITS.md)**
 
 ## 💬 Pull Request Comment Strategy
-
-Zenith uses [Conventional Comments](https://conventionalcomments.org/) for clear, actionable PR feedback.
+> Zenith uses [Conventional Comments](https://conventionalcomments.org/) for clear, actionable PR feedback.
 
 ### Comment Format
-
-```
+```ts
 <label> [decorations]: <subject>
-
 [discussion]
 ```
-
 ### Examples
-
-```
+```ts
 suggestion (non-blocking): Consider using a more descriptive variable name
-
 This would improve readability for future maintainers.
 ```
-
-```
+```ts
 issue (blocking): This function will throw an error when input is null
-
 We need to add null checking before processing.
 ```
 
 **📌 For complete details, see [COMMENTS.md](COMMENTS.md)**
 
 ## ❓ Questions?
-
 - Check existing [Issues](https://github.com/judahbsullivan/zenith/issues)
 - Review [README.md](../README.md) for project overview
-- Reach out to maintainers in your PR or issue
+- Reach out to maintainers in your PR, Issue or [Discord!](https://discord.gg/T85bBj8T3n)
 
 ---
 

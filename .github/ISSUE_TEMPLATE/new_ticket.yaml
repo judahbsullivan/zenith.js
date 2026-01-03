@@ -1,0 +1,34 @@
+name: "\U0001F4A1 New Ticket"
+description: Suggest a new task
+
+title: 'nn-your-issue'
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        _Thank you for taking the time to propose a new idea_
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: '<h2>Describe the Problem</h2>'
+      description: Please provide a short user story **DESCRIPTION** of the **PROBLEM**
+      placeholder: As a user I...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: '<h2>Acceptance Criteria</h2>'
+      description: Please provide the REQUIREMENTS that must be fulfilled to consider this issue resolved.
+      placeholder: X must show Y when Z...
+    validations:
+      required: true
+
+  - type: textarea
+    id: references
+    attributes:
+      label: '<h2>References</h2>'
+      description: Please provide any **SCREENSHOTS**, **CODE SNIPPETS** or **LINKS** to the codebase or documentation which will help implement a solution.

@@ -249,7 +249,8 @@ function generateRuntimeRouterCode(): string {
   /**
    * Resolve and render
    */
-  function resolveAndRender(path, query, updateHistory) {
+  function resolveAndRender(path, query, updateHistory, replace) {
+    replace = replace || false;
     const prevRoute = { ...currentRoute };
     const resolved = resolveRoute(path);
     
@@ -277,7 +278,11 @@ function generateRuntimeRouterCode(): string {
     
     if (updateHistory) {
       const url = path + (Object.keys(query).length ? '?' + new URLSearchParams(query) : '');
-      window.history.pushState(null, '', url);
+      if (replace) {
+        window.history.replaceState(null, '', url);
+      } else {
+        window.history.pushState(null, '', url);
+      }
     }
     
     notifyListeners(currentRoute, prevRoute);
@@ -288,9 +293,11 @@ function generateRuntimeRouterCode(): string {
    * Handle popstate
    */
   function handlePopState() {
+    // Don't update history on popstate - browser already changed it
     resolveAndRender(
       window.location.pathname,
       parseQueryString(window.location.search),
+      false,
       false
     );
   }
@@ -315,12 +322,20 @@ function generateRuntimeRouterCode(): string {
       path = currentDir + '/' + path;
     }
     
-    resolveAndRender(path, query, !options.replace);
+    // Normalize path for comparison
+    const normalizedPath = path === '' ? '/' : path;
+    const currentPath = currentRoute.path === '' ? '/' : currentRoute.path;
     
-    if (options.replace) {
-      const url = path + (Object.keys(query).length ? '?' + new URLSearchParams(query) : '');
-      window.history.replaceState(null, '', url);
+    // Check if we're already on this path
+    const isSamePath = normalizedPath === currentPath;
+    
+    // If same path and same query, don't navigate (idempotent)
+    if (isSamePath && JSON.stringify(query) === JSON.stringify(currentRoute.query)) {
+      return;
     }
+    
+    // Resolve and render with replace option if specified
+    resolveAndRender(path, query, true, options.replace || false);
   }
   
   /**

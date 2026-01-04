@@ -81,13 +81,20 @@ function handleClick(event, el) {
     }
   }
   
-  // Navigate using SPA router
-  if (window.__zenith_router && window.__zenith_router.navigate) {
-    window.__zenith_router.navigate(linkHref)
-  } else {
-    // Fallback to history API
-    window.history.pushState(null, '', linkHref)
-    window.dispatchEvent(new PopStateEvent('popstate'))
+  // Normalize path for comparison
+  const normalizedHref = linkHref === '' ? '/' : linkHref
+  const currentPath = window.location.pathname === '' ? '/' : window.location.pathname
+  
+  // Only navigate if path is different (idempotent navigation)
+  if (normalizedHref !== currentPath) {
+    // Navigate using SPA router
+    if (window.__zenith_router && window.__zenith_router.navigate) {
+      window.__zenith_router.navigate(linkHref)
+    } else {
+      // Fallback to history API
+      window.history.pushState(null, '', linkHref)
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    }
   }
 }
 

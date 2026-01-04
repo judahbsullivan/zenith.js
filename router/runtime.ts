@@ -115,7 +115,8 @@ function handlePopState(_event: PopStateEvent): void {
   const path = window.location.pathname
   const query = parseQueryString(window.location.search)
   
-  resolveAndRender(path, query, false)
+  // Don't update history on popstate - browser already changed it
+  resolveAndRender(path, query, false, false)
 }
 
 /**
@@ -156,7 +157,8 @@ export function resolveRoute(
 async function resolveAndRender(
   path: string,
   query: Record<string, string>,
-  updateHistory: boolean = true
+  updateHistory: boolean = true,
+  replace: boolean = false
 ): Promise<void> {
   const prevRoute = { ...currentRoute }
   
@@ -195,7 +197,12 @@ async function resolveAndRender(
     const url = path + (Object.keys(query).length > 0 
       ? "?" + new URLSearchParams(query).toString() 
       : "")
-    window.history.pushState(null, "", url)
+    
+    if (replace) {
+      window.history.replaceState(null, "", url)
+    } else {
+      window.history.pushState(null, "", url)
+    }
   }
   
   // Notify listeners
@@ -313,16 +320,20 @@ export async function navigate(
     path = currentDir + "/" + path
   }
   
-  // Resolve and render
-  await resolveAndRender(path, query, true)
+  // Normalize path for comparison (ensure trailing slash consistency)
+  const normalizedPath = path === "" ? "/" : path
+  const currentPath = currentRoute.path === "" ? "/" : currentRoute.path
   
-  // If replace option, replace history instead of push
-  if (options.replace) {
-    const url = path + (Object.keys(query).length > 0 
-      ? "?" + new URLSearchParams(query).toString() 
-      : "")
-    window.history.replaceState(null, "", url)
+  // Check if we're already on this path
+  const isSamePath = normalizedPath === currentPath
+  
+  // If same path and same query, don't navigate (idempotent)
+  if (isSamePath && JSON.stringify(query) === JSON.stringify(currentRoute.query)) {
+    return
   }
+  
+  // Resolve and render with replace option if specified
+  await resolveAndRender(path, query, true, options.replace || false)
 }
 
 /**
